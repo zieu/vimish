@@ -354,6 +354,9 @@
 
   // ---------- dispatch ----------
 
+  const G_TIMEOUT = 1000;
+  let lastG = -Infinity;
+
   window.addEventListener(
     'keydown',
     (e) => {
@@ -379,7 +382,14 @@
       const actions = {
         j: () => startScroll('j', 1),
         k: () => startScroll('k', -1),
-        g: () => scrollToEdge(false),
+        g: () => {
+          if (e.timeStamp - lastG < G_TIMEOUT) {
+            lastG = -Infinity;
+            scrollToEdge(false);
+          } else {
+            lastG = e.timeStamp;
+          }
+        },
         G: () => scrollToEdge(true),
         H: () => history.back(),
         L: () => history.forward(),
@@ -389,6 +399,7 @@
         N: () => jump(current - 1),
       };
 
+      if (e.key !== 'g' && (e.key.length === 1 || e.key === 'Escape')) lastG = -Infinity;
       if (e.key === 'Escape') {
         clearSearch();
         return;
