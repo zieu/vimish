@@ -330,11 +330,34 @@
     }
   }
 
+  // ---------- per-site disable ----------
+
+  // Iframes follow the top page's site, so an excluded site stays fully off.
+  const topOrigin = location.ancestorOrigins?.[location.ancestorOrigins.length - 1] || location.href;
+  const host = new URL(topOrigin).hostname;
+  // Off until storage answers, so an excluded site never sees a stray keystroke swallowed.
+  let disabled = true;
+
+  function applyExcluded(excluded = []) {
+    disabled = excluded.includes(host);
+    if (disabled) {
+      hideHints();
+      closeBar(false);
+      stopScroll();
+    }
+  }
+
+  chrome.storage.sync.get('excluded', ({ excluded }) => applyExcluded(excluded));
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes.excluded) applyExcluded(changes.excluded.newValue);
+  });
+
   // ---------- dispatch ----------
 
   window.addEventListener(
     'keydown',
     (e) => {
+      if (disabled) return;
       if (hints) {
         e.preventDefault();
         e.stopImmediatePropagation();
