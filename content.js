@@ -358,6 +358,8 @@
         k: () => startScroll('k', -1),
         g: () => scrollToEdge(false),
         G: () => scrollToEdge(true),
+        H: () => history.back(),
+        L: () => history.forward(),
         f: showHints,
         '/': openBar,
         n: () => jump(current + 1),

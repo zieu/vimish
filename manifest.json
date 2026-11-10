@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Vimish",
   "version": "0.1.0",
-  "description": "A few Vim keys for the web: j/k, g/G, f, /, n/N.",
+  "description": "A few Vim keys for the web: j/k, g/G, H/L, f, /, n/N.",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
