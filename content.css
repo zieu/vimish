@@ -1,0 +1,9 @@
+::highlight(vimish-match) {
+  background-color: #ffe066;
+  color: #000;
+}
+
+::highlight(vimish-current) {
+  background-color: #ff9632;
+  color: #000;
+}
