@@ -2,7 +2,8 @@
   if (window.__vimish) return;
   window.__vimish = true;
 
-  const SCROLL_STEP = 80;
+  const SCROLL_STEP = 60;
+  const SCROLL_SPEED = 0.9; // px per ms
   const HINT_CHARS = 'sadfjklewcmpgh';
   const CLICKABLE = [
     'a[href]', 'button', 'input:not([type=hidden])', 'select', 'textarea', 'summary', 'label',
@@ -42,17 +43,33 @@
     return doc;
   }
 
-  let pendingScroll = null;
+  let scroller = null; // { key, dir, el, start, from, held }
 
-  function scrollByStep(dy, repeat) {
-    const t = scrollTarget();
-    const now = performance.now();
-    // A new smooth scroll cancels the one in flight, so quick taps must add to its goal, not the current position.
-    const base = pendingScroll?.el === t && now < pendingScroll.until ? pendingScroll.top : t.scrollTop;
-    const top = Math.min(Math.max(base + dy, 0), t.scrollHeight - t.clientHeight);
-    pendingScroll = { el: t, top, until: now + 300 };
-    t.scrollTo({ top, behavior: repeat ? 'instant' : 'smooth' });
+  // Scrolls at a constant speed for as long as the key is held, ignoring OS key repeat.
+  // A tap still travels at least SCROLL_STEP.
+  function startScroll(key, dir) {
+    if (scroller?.key === key && scroller.held) return;
+    const el = scrollTarget();
+    scroller = { key, dir, el, start: performance.now(), from: el.scrollTop, held: true };
+    const s = scroller;
+    const frame = (now) => {
+      if (scroller !== s) return;
+      const moved = (now - s.start) * SCROLL_SPEED;
+      // 'instant' overrides any `scroll-behavior: smooth` the page sets, which would fight per-frame updates.
+      s.el.scrollTo({ top: s.from + s.dir * moved, behavior: 'instant' });
+      if (s.held || moved < SCROLL_STEP) requestAnimationFrame(frame);
+      else scroller = null;
+    };
+    requestAnimationFrame(frame);
   }
+
+  function stopScroll(key) {
+    if (!scroller || (key && scroller.key !== key)) return;
+    scroller.held = false;
+  }
+
+  window.addEventListener('keyup', (e) => stopScroll(e.key.toLowerCase()), true);
+  window.addEventListener('blur', () => stopScroll());
 
   function scrollToEdge(bottom) {
     const t = scrollTarget();
@@ -337,8 +354,8 @@
       if (isEditable(target)) return;
 
       const actions = {
-        j: () => scrollByStep(SCROLL_STEP, e.repeat),
-        k: () => scrollByStep(-SCROLL_STEP, e.repeat),
+        j: () => startScroll('j', 1),
+        k: () => startScroll('k', -1),
         g: () => scrollToEdge(false),
         G: () => scrollToEdge(true),
         f: showHints,
